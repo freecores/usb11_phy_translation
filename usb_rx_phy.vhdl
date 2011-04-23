@@ -40,6 +40,16 @@
 --          //                                                               //         --
 --          ///////////////////////////////////////////////////////////////////         --
 --======================================================================================--
+--                                                                                      --
+-- Change history                                                                       --
+-- +-------+-----------+-------+------------------------------------------------------+ --
+-- | Vers. | Date      | Autor | Comment                                              | --
+-- +-------+-----------+-------+------------------------------------------------------+ --
+-- |  1.0  |04 Feb 2011|  MN   | Initial version                                      | --
+-- |  1.1  |23 Apr 2011|  MN   | Added 'rst' to most latched signals.                 | --
+-- |       |           |       | Added ELSE construct in fs_next_state process to     | --
+-- |       |           |       |   prevent an undesired latch implementation.         | --
+--======================================================================================--
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -123,9 +133,11 @@ begin
     end if;
   end process;
 
-  p_sync_err: process (clk)
+  p_sync_err: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      sync_err <= '0';
+    elsif rising_edge(clk) then
       sync_err <= not rx_active and sync_err_d;
     end if;
   end process;
@@ -176,9 +188,11 @@ begin
   k   <= not rxdp_s and     rxdn_s;
   se0 <= not rxdp_s and not rxdn_s;
 
-  p_se0_s: process (clk)
+  p_se0_s: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      se0_s <= '0';
+    elsif rising_edge(clk) then
       if fs_ce ='1' then
         se0_s   <= se0;
       end if;
@@ -279,6 +293,9 @@ begin
         when FS_IDLE => if k ='1' and rx_en ='1' then -- 0
                           fs_next_state <= K1;
                           sync_err_d    <= '0';
+                        else
+                          fs_next_state <= FS_IDLE;
+                          sync_err_d    <= '0';
                         end if;
         when K1      => if j ='1' and rx_en ='1' then -- 1
                           fs_next_state <= J1;
@@ -360,9 +377,11 @@ begin
     end if;
   end process;
 
-  p_rx_valid_r: process (clk)
+  p_rx_valid_r: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      rx_valid_r <= '0';
+    elsif rising_edge(clk) then
       if rx_valid ='1' then
         rx_valid_r      <= '1';
       elsif fs_ce ='1' then
@@ -375,9 +394,11 @@ begin
   -- NRZI Decoder                                                                       --
   --====================================================================================--
 
-  p_sd_r: process (clk)
+  p_sd_r: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      sd_r <= '0';
+    elsif rising_edge(clk) then
       if fs_ce ='1' then
         sd_r <= rxd_s;
       end if;
@@ -420,9 +441,11 @@ begin
 
   drop_bit <= '1' when one_cnt ="110" else '0';
 
-  p_bit_stuff_err: process (clk) -- Bit Stuff Error
+  p_bit_stuff_err: process (clk, rst) -- Bit Stuff Error
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      bit_stuff_err <= '0';
+    elsif rising_edge(clk) then
       bit_stuff_err <= drop_bit and sd_nrzi and fs_ce and not se0 and rx_active;
     end if;
   end process;
@@ -431,9 +454,11 @@ begin
   -- Serial => Parallel converter                                                       --
   --====================================================================================--
 
-  p_shift_en: process (clk)
+  p_shift_en: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      shift_en <= '0';
+    elsif rising_edge(clk) then
       if fs_ce ='1' then
         shift_en <= synced_d or rx_active;
       end if;
@@ -479,9 +504,11 @@ begin
     end if;
   end process;
 
-  p_rx_valid: process (clk)
+  p_rx_valid: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      rx_valid <= '0';
+    elsif rising_edge(clk) then
       rx_valid <= not drop_bit and rx_valid1 and fs_ce;
     end if;
   end process;
@@ -493,9 +520,11 @@ begin
     end if;
   end process;
 
-  p_byte_err: process (clk)
+  p_byte_err: process (clk, rst)
   begin
-    if rising_edge(clk) then
+    if rst ='0' then
+      byte_err <= '0';
+    elsif rising_edge(clk) then
       byte_err <= se0 and not se0_r and (bit_cnt(1) or bit_cnt(2)) and rx_active;
     end if;
   end process;

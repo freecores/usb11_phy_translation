@@ -41,6 +41,16 @@
 --          //                                                               //         --
 --          ///////////////////////////////////////////////////////////////////         --
 --======================================================================================--
+--                                                                                      --
+-- Change history                                                                       --
+-- +-------+-----------+-------+------------------------------------------------------+ --
+-- | Vers. | Date      | Autor | Comment                                              | --
+-- +-------+-----------+-------+------------------------------------------------------+ --
+-- |  1.0  |04 Feb 2011|  MN   | Initial version                                      | --
+-- |  1.1  |23 Apr 2011|  MN   | Added missing 'rst' in process sensitivity lists.    | --
+-- |       |           |       | Added ELSE construct in fs_next_state process to     | --
+-- |       |           |       |   prevent an undesired latch implementation.         | --
+--======================================================================================--
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -121,7 +131,7 @@ begin
     end if;
   end process;
 
-  p_sync_err: process (clk)
+  p_sync_err: process (clk, rst)
   begin
     if rst ='0' then
       sync_err <= '0';
@@ -176,7 +186,7 @@ begin
   k   <= not rxdp_s and     rxdn_s;
   se0 <= not rxdp_s and not rxdn_s;
 
-  p_se0_s: process (clk)
+  p_se0_s: process (clk, rst)
   begin
     if rst ='0' then
       se0_s <= '0';
@@ -249,6 +259,9 @@ begin
       case fs_state is
         when FS_IDLE => if k ='1' and rx_en ='1' then -- 0
                           fs_next_state <= K1;
+                          sync_err_d    <= '0';
+                        else
+                          fs_next_state <= FS_IDLE;
                           sync_err_d    <= '0';
                         end if;
         when K1      => if j ='1' and rx_en ='1' then -- 1
@@ -331,7 +344,7 @@ begin
     end if;
   end process;
 
-  p_rx_valid_r: process (clk)
+  p_rx_valid_r: process (clk, rst)
   begin
     if rst ='0' then
       rx_valid_r <= '0';
@@ -348,7 +361,7 @@ begin
   -- NRZI Decoder                                                                       --
   --====================================================================================--
 
-  p_sd_r: process (clk)
+  p_sd_r: process (clk, rst)
   begin
     if rst ='0' then
       sd_r <= '0';
@@ -395,7 +408,7 @@ begin
 
   drop_bit <= '1' when one_cnt ="110" else '0';
 
-  p_bit_stuff_err: process (clk) -- Bit Stuff Error
+  p_bit_stuff_err: process (clk, rst) -- Bit Stuff Error
   begin
     if rst ='0' then
       bit_stuff_err <= '0';
@@ -408,7 +421,7 @@ begin
   -- Serial => Parallel converter                                                       --
   --====================================================================================--
 
-  p_shift_en: process (clk)
+  p_shift_en: process (clk, rst)
   begin
     if rst ='0' then
       shift_en <= '0';
@@ -458,7 +471,7 @@ begin
     end if;
   end process;
 
-  p_rx_valid: process (clk)
+  p_rx_valid: process (clk, rst)
   begin
     if rst ='0' then
       rx_valid <= '0';
@@ -474,7 +487,7 @@ begin
     end if;
   end process;
 
-  p_byte_err: process (clk)
+  p_byte_err: process (clk, rst)
   begin
     if rst ='0' then
       byte_err <= '0';

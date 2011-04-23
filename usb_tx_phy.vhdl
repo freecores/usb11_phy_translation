@@ -40,7 +40,16 @@
 --          //                                                               //         --
 --          ///////////////////////////////////////////////////////////////////         --
 --======================================================================================--
-
+--                                                                                      --
+-- Change history                                                                       --
+-- +-------+-----------+-------+------------------------------------------------------+ --
+-- | Vers. | Date      | Autor | Comment                                              | --
+-- +-------+-----------+-------+------------------------------------------------------+ --
+-- |  1.0  |04 Feb 2011|  MN   | Initial version                                      | --
+-- |  1.1  |23 Apr 2011|  MN   | Added missing 'rst' in process sensitivity lists     | --
+-- |       |           |       | Added ELSE constructs in next_state process to       | --
+-- |       |           |       |   prevent an undesired latch implementation.         | --
+--======================================================================================--
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -66,7 +75,7 @@ architecture RTL of usb_tx_phy is
 
   signal hold_reg           : std_logic_vector(7 downto 0);
   signal ld_data            : std_logic;
-  signal ld_data_d         : std_logic;
+  signal ld_data_d          : std_logic;
   signal ld_eop_d           : std_logic;
   signal ld_sop_d           : std_logic;
   signal bit_cnt            : std_logic_vector(2 downto 0);
@@ -214,7 +223,7 @@ begin
   sft_done_e <= sft_done and not sft_done_r;
 
   -- Out Data Hold Register
-  p_hold_reg: process (clk)
+  p_hold_reg: process (clk, rst)
   begin
     if rst ='0' then
         hold_reg   <= X"00";
@@ -391,22 +400,35 @@ begin
       case (state) is
         when IDLE_STATE => if TxValid_i ='1' then
                              next_state <= SOP_STATE;
+                           ELSE
+                             next_state <= IDLE_STATE;
                            end if;
         when SOP_STATE  => if sft_done_e ='1' then
                              next_state <= DATA_STATE;
+                           ELSE
+                             next_state <= SOP_STATE;
                            end if;
         when DATA_STATE => if data_done ='0' and sft_done_e ='1' then
                              next_state <= EOP1_STATE;
+                           ELSE
+                             next_state <= DATA_STATE;
                            end if;
         when EOP1_STATE => if eop_done ='1' then
                              next_state <= EOP2_STATE;
+                           ELSE
+                             next_state <= EOP1_STATE;
                            end if;
         when EOP2_STATE => if eop_done ='0' and fs_ce ='1' then
                              next_state <= WAIT_STATE;
+                           ELSE
+                             next_state <= EOP2_STATE;
                            end if;
-        when others     => if fs_ce = '1' then   --is WAIT_STATE
+        when WAIT_STATE => if fs_ce = '1' then
                              next_state <= IDLE_STATE;
+                           ELSE
+                             next_state <= WAIT_STATE;
                            end if;
+        when others     => next_state <= IDLE_STATE;
       end case;
     end if;
   end process;
